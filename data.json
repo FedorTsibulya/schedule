@@ -1,0 +1,14 @@
+{
+ "version": 1,
+ "updatedAt": null,
+ "settings": {
+  "title": "Расписание: Полина",
+  "normHours": 20,
+  "dayHours": 8,
+  "start": "2026-10-12",
+  "startBalanceHours": 32
+ },
+ "labels": [],
+ "days": {},
+ "weeks": {}
+}

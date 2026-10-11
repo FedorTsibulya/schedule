@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Расписание</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top" id="header"></header>
+<div class="banner" id="banner" hidden></div>
+<header class="top" id="toolbar"></header>
+<main id="main">
+  <section class="cal" id="cal"><div class="loading">Загрузка расписания…</div></section>
+  <aside class="panel" id="panel"></aside>
+</main>
+<div class="pop" id="pop" hidden></div>
+
+<dialog id="login">
+  <form method="dialog" id="loginForm">
+    <h2>Вход для редактирования</h2>
+    <p>Редактировать расписание может только владелец. Введите личный токен GitHub с правом записи в этот репозиторий — он сохранится только в этом браузере.</p>
+    <p>Как создать токен — в README репозитория.</p>
+    <input type="password" id="tokenInput" placeholder="github_pat_…" autocomplete="off" required>
+    <div class="msg-err" id="loginErr"></div>
+    <div class="row-end">
+      <button type="button" class="btn" id="loginCancel">Отмена</button>
+      <button type="submit" class="btn primary" id="loginOk">Войти</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="calc.js"></script>
+<script src="storage.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Тесты расчётов</title>
+<style>
+  body { font: 14px/1.4 "Segoe UI", Roboto, Arial, sans-serif; margin: 20px; color: #1f1f1f; background: #fff; }
+  .ok { color: #137333; } .fail { color: #c5221f; font-weight: 600; }
+  pre { margin: 2px 0 8px 20px; color: #5f6368; }
+  #summary { font-size: 18px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div id="summary"></div>
+<div id="out"></div>
+<script src="calc.js"></script>
+<script>
+const C = window.Calc;
+const results = [];
+function test(name, fn) {
+  try { fn(); results.push({ name, ok: true }); }
+  catch (e) { results.push({ name, ok: false, msg: e.message }); }
+}
+function eq(actual, expected, what = '') {
+  const a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error(`${what} ожидалось ${b}, получено ${a}`);
+}
+
+// Неделя 12–18.10.2026. days: { 'ПН': { plan: [[10,18,'W']], fact: [...] }, ... }
+const WD = { ПН: 0, ВТ: 1, СР: 2, ЧТ: 3, ПТ: 4, СБ: 5, ВС: 6 };
+const MON = '2026-10-12';
+function slots(ranges) {
+  return ranges.reduce((s, [f, t, ch]) => C.setRange(s, C.slotOf(f), C.slotOf(t), ch), C.EMPTY);
+}
+function data(week = {}, extra = {}) {
+  const d = {
+    settings: { normHours: 20, dayHours: 8, start: MON, startBalanceHours: 32 },
+    labels: [], days: {}, weeks: {}, ...extra,
+  };
+  for (const [wd, v] of Object.entries(week)) {
+    d.days[C.addDays(MON, WD[wd])] = { plan: v.plan ? slots(v.plan) : undefined, fact: v.fact ? slots(v.fact) : undefined };
+  }
+  return d;
+}
+const work = (...hrs) => ({ fact: hrs });
+
+// Пример из макета: факт 26,5 ч работы + отгул в среду
+const EXAMPLE = data({
+  ПН: { plan: [[10, 18, 'W']], fact: [[10, 18, 'W']] },
+  ВТ: { plan: [[10, 14, 'W']], fact: [[10, 15, 'W']] },
+  СР: { plan: [[10, 18, 'C']], fact: [[10, 18, 'C']] },
+  ЧТ: { plan: [[10, 18, 'W'], [21, 23, 'X']], fact: [[10, 19.5, 'W']] },
+  ПТ: { plan: [[18, 21, 'X']], fact: [[12, 16, 'W']] },
+  СБ: { plan: [[7, 24, 'X']] },
+  ВС: { plan: [[7, 24, 'X']] },
+});
+
+// ---------- Формула баланса (таблицы из обсуждения) ----------
+
+test('Факт примера: 26,5 ч + 1 отгул → +6,5 ч', () => {
+  const t = C.weekTotals(EXAMPLE, MON, 'fact');
+  eq([t.W, t.C, t.inNorm, t.over, t.delta], [26.5, 8, 34.5, 14.5, 6.5]);
+});
+test('План примера: 20 ч + 1 отгул → 0', () => {
+  const t = C.weekTotals(EXAMPLE, MON, 'plan');
+  eq([t.W, t.C, t.over, t.delta], [20, 8, 8, 0]);
+});
+test('28 ч без отгулов → +8 ч', () => {
+  eq(C.weekTotals(data({ ПН: work([9, 23, 'W']), ВТ: work([9, 23, 'W']) }), MON, 'fact').delta, 8);
+});
+test('28 ч + 1 отгул → +8 ч (отгул покрыт нормой)', () => {
+  const d = data({ ПН: work([9, 23, 'W']), ВТ: work([9, 23, 'W']), СР: work([10, 18, 'C']) });
+  eq(C.weekTotals(d, MON, 'fact').delta, 8);
+});
+test('16 ч + 1 отгул → −4 ч (списано полдня)', () => {
+  const d = data({ ПН: work([10, 18, 'W']), ВТ: work([10, 18, 'W']), СР: work([10, 18, 'C']) });
+  eq(C.weekTotals(d, MON, 'fact').delta, -4);
+});
+test('12 ч + 1 отгул → −8 ч', () => {
+  const d = data({ ПН: work([10, 18, 'W']), ВТ: work([10, 14, 'W']), СР: work([10, 18, 'C']) });
+  eq(C.weekTotals(d, MON, 'fact').delta, -8);
+});
+test('12 ч без отгулов → 0 (недоработка не учитывается)', () => {
+  const d = data({ ПН: work([10, 18, 'W']), ВТ: work([10, 14, 'W']) });
+  eq(C.weekTotals(d, MON, 'fact').delta, 0);
+});
+test('3 дня отгулов + 4 ч работы → списано 20 ч, лишние 4 ч, −16 ч', () => {
+  const d = data({ ПН: work([10, 18, 'C']), ВТ: work([10, 18, 'C']), СР: work([10, 18, 'C']), ЧТ: work([10, 14, 'W']) });
+  const t = C.weekTotals(d, MON, 'fact');
+  eq([t.Cn, t.excessC, t.over, t.delta], [20, 4, 4, -16]);
+});
+test('Пустая неделя → 0', () => {
+  eq(C.weekTotals(data(), MON, 'plan').delta, 0);
+});
+
+// ---------- Малиновая подсветка ----------
+
+test('Факт примера: малиновое — Вт 14–15, Чт весь, Пт весь = 14,5 ч', () => {
+  const runs = C.overtimeRuns(C.weekView(EXAMPLE, MON, 'fact'));
+  eq(runs.map(r => [r.date.slice(8), C.timeOf(r.from), C.timeOf(r.to)]),
+    [['13', '14:00', '15:00'], ['15', '10:00', '19:30'], ['16', '12:00', '16:00']]);
+  eq(runs.reduce((s, r) => s + r.hours, 0), C.weekTotals(EXAMPLE, MON, 'fact').over);
+});
+test('План примера: малиновый весь четверг (8 ч)', () => {
+  const runs = C.overtimeRuns(C.weekView(EXAMPLE, MON, 'plan'));
+  eq(runs.map(r => [r.date.slice(8), C.timeOf(r.from), C.timeOf(r.to)]), [['15', '10:00', '18:00']]);
+});
+test('Отгул никогда не становится малиновым', () => {
+  const d = data({ ПН: work([9, 21, 'W']), ВТ: work([9, 21, 'W']), СР: work([10, 18, 'C']) });
+  const v = C.weekView(d, MON, 'fact');
+  eq(C.count(v['2026-10-14'], 'C'), 16);
+});
+test('Отгулов больше нормы → вся работа малиновая', () => {
+  const d = data({ ПН: work([10, 18, 'C']), ВТ: work([10, 18, 'C']), СР: work([10, 18, 'C']), ЧТ: work([10, 14, 'W']) });
+  eq(C.overtimeRuns(C.weekView(d, MON, 'fact')).reduce((s, r) => s + r.hours, 0), 4);
+});
+
+// ---------- Баланс по неделям ----------
+
+test('Баланс: старт 32 ч, неделя с фактом +6,5 → 38,5 ч', () => {
+  const d = JSON.parse(JSON.stringify(EXAMPLE));
+  d.weeks[MON] = { factDone: true };
+  const b = C.balance(d, MON);
+  eq([b.actual, b.forecast], [38.5, 38.5]);
+});
+test('Неделя без факта не входит в баланс, но входит в прогноз', () => {
+  const d = JSON.parse(JSON.stringify(EXAMPLE));
+  d.weeks[MON] = { factDone: true };
+  d.days['2026-10-19'] = { plan: slots([[10, 18, 'C']]) }; // план: отгул, работы нет
+  const b = C.balance(d, '2026-10-21');
+  eq([b.actual, b.forecast], [38.5, 30.5]);
+  eq(b.history.map(h => [h.monday, h.done, h.delta, h.after]),
+    [[MON, true, 6.5, 38.5], ['2026-10-19', false, -8, 30.5]]);
+});
+test('Недели до начала учёта не считаются', () => {
+  const d = data();
+  d.days['2026-10-05'] = { fact: slots([[9, 23, 'W'], [7, 9, 'W']]) };
+  d.weeks['2026-10-05'] = { factDone: true };
+  eq(C.balance(d, MON).actual, 32);
+});
+test('Баланс в днях: округление вниз до 0,5', () => {
+  eq([32, 37, 38.5, 39.9, 40, 3.9, 0, -1, -4].map(h => C.balanceDays(h)), [4, 4.5, 4.5, 4.5, 5, 0, 0, -0.5, -0.5]);
+});
+
+// ---------- Пресеты и статусы дней ----------
+
+test('Пресеты дня', () => {
+  const st = (k, l = 'plan') => C.dayStatus(C.applyPreset(k), l).text;
+  eq([st('full'), st('half'), st('halfComp'), st('comp'), st('off'), st('clear'), st('off', 'fact'), st('clear', 'fact')],
+    ['Полный день', 'Полдня', 'Полдня отгул', 'Отгул', 'Выходной', 'По запросу', 'Выходной', 'Без работы']);
+});
+test('Полный день — 10:00–18:00, полдня — 10:00–14:00', () => {
+  eq(C.runs(C.applyPreset('full')), [{ ch: 'W', from: C.slotOf(10), to: C.slotOf(18) }]);
+  eq(C.runs(C.applyPreset('halfComp')),
+    [{ ch: 'W', from: C.slotOf(10), to: C.slotOf(14) }, { ch: 'C', from: C.slotOf(14), to: C.slotOf(18) }]);
+});
+test('Свой график показывает часы', () => {
+  eq(C.dayStatus(slots([[10, 19.5, 'W']]), 'fact').text, 'Свой график · 9,5 ч');
+  eq(C.dayStatus(slots([[10, 12, 'W'], [12, 18, 'C']]), 'plan').text, 'Свой график · 2 ч + отгул 6 ч');
+});
+test('Факт, который не правили, равен плану целиком (кроме фона)', () => {
+  const d = data({ ПН: { plan: [[10, 18, 'W'], [18, 21, 'X']] } });
+  const day = C.getDay(d, MON);
+  eq([day.fact, day.ownFact], [slots([[10, 18, 'W'], [18, 21, 'X']]), false]);
+  eq(C.weekTotals(d, MON, 'fact').W, 8);
+});
+test('Явно очищенный факт не берёт план', () => {
+  const d = data({ ПН: { plan: [[10, 18, 'W']] } });
+  d.days[MON].fact = C.EMPTY;
+  eq([C.getDay(d, MON).fact, C.weekTotals(d, MON, 'fact').W], [C.EMPTY, 0]);
+});
+test('«Не работаю» в факте не влияет на расчёт', () => {
+  const d = data({ ПН: { fact: [[10, 18, 'W'], [18, 24, 'X']] } });
+  eq(C.weekTotals(d, MON, 'fact').W, 8);
+});
+
+// ---------- Даты и форматирование ----------
+
+test('Понедельник недели', () => {
+  eq([C.mondayOf('2026-10-11'), C.mondayOf('2026-10-12'), C.mondayOf('2026-10-18'), C.mondayOf('2026-11-01')],
+    ['2026-10-05', '2026-10-12', '2026-10-12', '2026-10-26']);
+});
+test('Переход через конец года', () => {
+  eq(C.weekDates(C.mondayOf('2027-01-01')), ['2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01', '2027-01-02', '2027-01-03']);
+});
+test('Склонение «день»', () => {
+  eq([0, 1, 2, 4, 4.5, 5, 11, 21, 22, 0.5].map(C.fmtDays),
+    ['0 дней', '1 день', '2 дня', '4 дня', '4,5 дня', '5 дней', '11 дней', '21 день', '22 дня', '0,5 дня']);
+});
+test('Часы со знаком', () => {
+  eq([C.fmtSigned(6.5), C.fmtSigned(-8), C.fmtSigned(0), C.fmtHours(-0.5)], ['+6,5 ч', '−8 ч', '0 ч', '−0,5 ч']);
+});
+
+// ---------- Вывод ----------
+const failed = results.filter(r => !r.ok).length;
+document.getElementById('summary').innerHTML = failed
+  ? `<span class="fail">Провалено: ${failed} из ${results.length}</span>`
+  : `<span class="ok">Все тесты пройдены: ${results.length}</span>`;
+document.getElementById('out').innerHTML = results.map(r =>
+  `<div class="${r.ok ? 'ok' : 'fail'}">${r.ok ? '✓' : '✗'} ${r.name}</div>${r.ok ? '' : `<pre>${r.msg}</pre>`}`).join('');
+window.TEST_RESULTS = { total: results.length, failed, failures: results.filter(r => !r.ok) };
+</script>
+</body>
+</html>

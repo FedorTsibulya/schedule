@@ -1,0 +1,100 @@
+{
+ "version": 1,
+ "updatedAt": "2026-10-18T21:40:00+03:00",
+ "settings": {
+  "title": "Расписание: Полина",
+  "normHours": 20,
+  "dayHours": 8,
+  "start": "2026-10-12",
+  "startBalanceHours": 32
+ },
+ "labels": [
+  {
+   "id": "l1",
+   "name": "Встреча",
+   "color": "#8e24aa"
+  },
+  {
+   "id": "l2",
+   "name": "Мероприятие",
+   "color": "#00897b"
+  }
+ ],
+ "days": {
+  "2026-10-12": {
+   "plan": "......WWWWWWWWWWWWWWWW............",
+   "fact": "......WWWWWWWWWWWWWWWW............",
+   "marks": [
+    {
+     "from": 8,
+     "to": 10,
+     "label": "l1"
+    }
+   ]
+  },
+  "2026-10-13": {
+   "plan": "......WWWWWWWW....................",
+   "fact": "......WWWWWWWWWW.................."
+  },
+  "2026-10-14": {
+   "plan": "......CCCCCCCCCCCCCCCC............",
+   "fact": "......CCCCCCCCCCCCCCCC............"
+  },
+  "2026-10-15": {
+   "plan": "......WWWWWWWWWWWWWWWW......XXXX..",
+   "fact": "......WWWWWWWWWWWWWWWWWWW.........",
+   "marks": [
+    {
+     "from": 20,
+     "to": 30,
+     "label": "l2"
+    }
+   ],
+   "note": "Отраслевая конференция"
+  },
+  "2026-10-16": {
+   "plan": "......................XXXXXX......",
+   "fact": "..........WWWWWWWW................",
+   "note": "Могу подключиться при необходимости"
+  },
+  "2026-10-17": {
+   "plan": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  "2026-10-18": {
+   "plan": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  "2026-10-19": {
+   "plan": "......WWWWWWWWWWWWWWWW............"
+  },
+  "2026-10-20": {
+   "plan": "......CCCCCCCCCCCCCCCC............",
+   "labels": [
+    "l2"
+   ]
+  },
+  "2026-10-21": {
+   "plan": "......WWWWWWWWCCCCCCCC............"
+  },
+  "2026-10-22": {
+   "plan": "..........WWWWWWWWWWWW............",
+   "marks": [
+    {
+     "from": 10,
+     "to": 12,
+     "label": "l1"
+    }
+   ]
+  },
+  "2026-10-24": {
+   "plan": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  },
+  "2026-10-25": {
+   "plan": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  }
+ },
+ "weeks": {
+  "2026-10-12": {
+   "factDone": true
+  }
+ }
+}
