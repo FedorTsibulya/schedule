@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-11T22:55:23.148Z",
+ "updatedAt": "2026-10-12T08:57:05.785Z",
  "settings": {
   "title": "Расписание: Полина",
   "normHours": 20,
@@ -9,6 +9,10 @@
   "startBalanceHours": 32
  },
  "labels": [],
- "days": {},
+ "days": {
+  "2026-10-16": {
+   "plan": "....................XXXXXXXX......"
+  }
+ },
  "weeks": {}
 }
