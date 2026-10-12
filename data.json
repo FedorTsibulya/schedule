@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-12T08:58:23.151Z",
+ "updatedAt": "2026-10-12T11:14:54.316Z",
  "settings": {
   "title": "Расписание: Полина",
   "normHours": 20,
@@ -8,7 +8,13 @@
   "start": "2026-10-12",
   "startBalanceHours": 32
  },
- "labels": [],
+ "labels": [
+  {
+   "id": "lmv55nmy3",
+   "name": "Фисташки",
+   "color": "#7cb342"
+  }
+ ],
  "days": {
   "2026-10-16": {
    "plan": "....................XXXXXXXX......"
@@ -18,6 +24,15 @@
   },
   "2026-10-12": {
    "plan": "......WWWWWWWWWWWWWWWW............"
+  },
+  "2026-10-13": {
+   "marks": [
+    {
+     "from": 20,
+     "to": 25,
+     "label": "lmv55nmy3"
+    }
+   ]
   }
  },
  "weeks": {}
